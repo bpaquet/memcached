@@ -34,6 +34,7 @@ class Memcached
     :credentials => nil,
     :experimental_features => false,
     :codec => Memcached::MarshalCodec,
+    :reset_before_retry => false,
     :exception_retry_limit => 5,
     :exceptions_to_retry => [
         Memcached::ServerIsMarkedDead,
@@ -80,6 +81,7 @@ Valid option parameters are:
 <tt>:retry_timeout</tt>:: How long to wait until retrying a dead server. Has no effect unless <tt>:server_failure_limit</tt> is non-zero. Defaults to <tt>30</tt>.
 <tt>:auto_eject_hosts</tt>:: Whether to temporarily eject dead hosts from the pool. Defaults to <tt>true</tt>. Note that in the event of an ejection, <tt>:auto_eject_hosts</tt> will remap the entire pool unless <tt>:distribution</tt> is set to <tt>:consistent</tt>.
 <tt>:exception_retry_limit</tt>:: How many times to retry before raising exceptions in <tt>:exceptions_to_retry</tt>. Defaults to <tt>5</tt>.
+<tt>:reset_before_retry</tt>:: Reset connection before retrying after an error.
 <tt>:exceptions_to_retry</tt>:: Which exceptions to retry. Defaults to <b>ServerIsMarkedDead</b>, <b>ATimeoutOccurred</b>, <b>ConnectionBindFailure</b>, <b>ConnectionFailure</b>, <b>ConnectionSocketCreateFailure</b>, <b>Failure</b>, <b>MemoryAllocationFailure</b>, <b>ReadFailure</b>, <b>ServerError</b>, <b>SystemError</b>, <b>UnknownReadFailure</b>, and <b>WriteFailure</b>.
 <tt>:cache_lookups</tt>:: Whether to cache hostname lookups for the life of the instance. Defaults to <tt>true</tt>.
 <tt>:support_cas</tt>:: Flag CAS support in the client. Accepts <tt>true</tt> or <tt>false</tt>. Defaults to <tt>false</tt> because it imposes a slight performance penalty. Note that your server must also support CAS or you will trigger <b>ProtocolError</b> exceptions.
@@ -316,6 +318,7 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
       retry if e.instance_of?(ClientError) && !tries
       raise unless tries < options[:exception_retry_limit] && should_retry(e)
       tries += 1
+      reset if options[:reset_before_retry]
       retry
     end
   end
@@ -332,6 +335,7 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
       tries ||= 0
       raise unless tries < options[:exception_retry_limit] && should_retry(e)
       tries += 1
+      reset if options[:reset_before_retry]
       retry
     end
   end
@@ -349,6 +353,7 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
     tries ||= 0
     raise unless tries < options[:exception_retry_limit] && should_retry(e)
     tries += 1
+    reset if options[:reset_before_retry]
     retry
   end
 
@@ -361,6 +366,7 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
     tries ||= 0
     raise unless tries < options[:exception_retry_limit] && should_retry(e)
     tries += 1
+    reset if options[:reset_before_retry]
     retry
   end
 
@@ -381,6 +387,7 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
       tries ||= 0
       raise unless tries < options[:exception_retry_limit] && should_retry(e)
       tries += 1
+      reset if options[:reset_before_retry]
       retry
     end
   end
@@ -398,6 +405,7 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
     tries ||= 0
     raise unless tries < options[:exception_retry_limit] && should_retry(e)
     tries += 1
+    reset if options[:reset_before_retry]
     retry
   end
 
@@ -412,6 +420,7 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
     tries ||= 0
     raise unless tries < options[:exception_retry_limit] && should_retry(e)
     tries += 1
+    reset if options[:reset_before_retry]
     retry
   end
 
@@ -431,6 +440,7 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
       tries_for_get ||= 0
       raise unless tries_for_get < options[:exception_retry_limit] && should_retry(e)
       tries_for_get += 1
+      reset if options[:reset_before_retry]
       retry
     end
 
@@ -449,6 +459,7 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
       tries_for_cas ||= 0
       raise unless tries_for_cas < options[:exception_retry_limit] && should_retry(e)
       tries_for_cas += 1
+      reset if options[:reset_before_retry]
       retry
     end
   end
@@ -467,6 +478,7 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
     tries ||= 0
     raise unless tries < options[:exception_retry_limit] && should_retry(e)
     tries += 1
+    reset if options[:reset_before_retry]
     retry
   end
 
@@ -479,6 +491,7 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
     tries ||= 0
     raise unless tries < options[:exception_retry_limit] && should_retry(e)
     tries += 1
+    reset if options[:reset_before_retry]
     retry
   end
 
@@ -526,6 +539,7 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
     tries ||= 0
     raise unless tries < options[:exception_retry_limit] && should_retry(e)
     tries += 1
+    reset if options[:reset_before_retry]
     retry
   end
 
