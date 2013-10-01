@@ -18,6 +18,8 @@ class Memcached
     :retry_timeout => 60,
     :timeout => 0.25,
     :rcv_timeout => nil,
+    :snd_timeout => nil,
+    :poll_max_retries => 1,
     :poll_timeout => nil,
     :connect_timeout => 0.25,
     :prefix_key => '',
@@ -99,6 +101,7 @@ Valid option parameters are:
 <tt>:binary_protocol</tt>:: Use the binary protocol. Defaults to false. Please note that using the binary protocol is usually <b>slower</b> than the ASCII protocol.
 <tt>:sort_hosts</tt>:: Whether to force the server list to stay sorted. This defeats consistent hashing and is rarely useful.
 <tt>:verify_key</tt>:: Validate keys before accepting them. Never disable this.
+<tt>:poll_max_retries</tt>:: Maximum poll timeout retries before marking a flush failed on timeouts.
 
 Please note that when <tt>:no_block => true</tt>, update methods do not raise on errors. For example, if you try to <tt>set</tt> an invalid key, it will appear to succeed. The actual setting of the key occurs after libmemcached has returned control to your program, so there is no way to backtrack and raise the exception.
 
@@ -109,7 +112,11 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
 
     # Merge option defaults and discard meaningless keys
     @options = DEFAULTS.merge(opts)
-    @options.delete_if { |k,v| not DEFAULTS.keys.include? k }
+    @options.each do |key,_|
+       unless DEFAULTS.keys.include? key
+         raise ArgumentError, "#{key.inspect} is not a valid configuration parameter."
+       end
+    end
 
     # Marginally speed up settings access for hot paths
     @default_ttl = options[:default_ttl]
@@ -151,8 +158,11 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
     options[:rcv_timeout] ||= options[:timeout]
     options[:poll_timeout] ||= options[:timeout]
 
-    # Set the prefix key. Support the legacy name.
-    set_prefix_key(options[:prefix_key] || options[:namespace])
+    # Write timeouts
+    options[:snd_timeout] ||= options[:timeout]
+
+    # Set the prefix key
+    set_prefix_key(options[:prefix_key])
 
     # Set the behaviors and credentials on the struct
     set_behaviors
@@ -223,7 +233,6 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
       end
     )
   end
-  alias :set_namespace :set_prefix_key
 
   # Return the current prefix key.
   def prefix_key
@@ -233,7 +242,6 @@ Please note that when <tt>:no_block => true</tt>, update methods do not raise on
       ""
     end
   end
-  alias :namespace :prefix_key
 
   # Safely copy this instance. Returns a Memcached instance.
   #
